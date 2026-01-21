@@ -4,6 +4,7 @@ import { ResetPassword } from './password-reset.entity';
 import { Model } from 'mongoose';
 import { OtpService } from '../otp/otp.service';
 import { User } from 'src/modules/user/user.entity';
+import { Doc } from 'src/types/doc';
 
 @Injectable()
 export class PasswordResetService {
@@ -45,9 +46,9 @@ export class PasswordResetService {
   async getTokenOwner(token: string) {
     let tokenObj = await this.resetPasswordModel
       .findOne({ token })
-      .populate<{ userId: User }>('userId')
+      .populate<{ user: Doc<User> }>('user')
       .exec();
 
-    return tokenObj?.userId;
+    return tokenObj?.user;
   }
 }

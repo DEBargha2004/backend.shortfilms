@@ -4,6 +4,7 @@ import {
   HttpException,
   HttpStatus,
   Param,
+  Query,
   Req,
   UseGuards,
 } from '@nestjs/common';
@@ -38,6 +39,12 @@ export class UserController {
       email: res.email,
       name: res.name,
     };
+  }
+
+  @Get('search')
+  async getUsers(@Query('query') query: string) {
+    const res = await this.userService.searchUsers(query);
+    return res;
   }
 
   @Get(':id')

@@ -8,10 +8,10 @@ import { JwtStrategy } from './jwt.strategy';
 import { TokenModule } from '../token/token.module';
 import { EmailModule } from '../email/email.module';
 import { CredentialsService } from './services/credentials.service';
-import { Mongoose } from 'mongoose';
 import { MongooseModule } from '@nestjs/mongoose';
 import { Credentials, CredentialsSchema } from './entities/credentials.entity';
 import { StorageModule } from '../storage/storage.module';
+import { EnvService } from 'src/env.service';
 
 @Module({
   imports: [
@@ -29,7 +29,8 @@ import { StorageModule } from '../storage/storage.module';
     StorageModule,
   ],
   controllers: [AuthController],
-  providers: [AuthService, JwtStrategy, CredentialsService],
+
+  providers: [AuthService, JwtStrategy, CredentialsService, EnvService],
   exports: [AuthService, CredentialsService],
 })
 export class AuthModule {}

@@ -5,7 +5,7 @@ import { User } from 'src/modules/user/user.entity';
 @Schema({ timestamps: true })
 export class ResetPassword {
   @Prop({ type: Types.ObjectId, ref: User.name, required: true })
-  userId: Types.ObjectId;
+  user: Types.ObjectId;
 
   @Prop({ type: String, required: true, unique: true })
   token: string;

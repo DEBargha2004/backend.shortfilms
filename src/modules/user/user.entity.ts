@@ -17,5 +17,11 @@ export class User {
 }
 
 export const UserSchema = SchemaFactory.createForClass(User);
+export const UserIndex = 'user_index';
+UserSchema.index(
+  { name: 'text', email: 'text' },
+  { name: UserIndex, weights: { name: 5, email: 1 } },
+);
+
 export type UserDocument = HydratedDocument<User>;
 export type TDefaultUser = User & { _id: Types.ObjectId };

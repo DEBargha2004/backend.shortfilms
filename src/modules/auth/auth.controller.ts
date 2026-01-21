@@ -13,12 +13,14 @@ import { AccountVerificationDto } from './dto/account-verification';
 import { PasswordResetDto, PasswordResetTokenDto } from './dto/password-reset';
 import type { Response } from 'express';
 import { StorageService } from '../storage/storage.service';
+import { EnvService } from 'src/env.service';
 
 @Controller('auth')
 export class AuthController {
   constructor(
     private readonly authService: AuthService,
     private readonly storageService: StorageService,
+    private readonly envService: EnvService,
   ) {}
 
   @Post('signin')
@@ -32,7 +34,7 @@ export class AuthController {
     res.cookie('jwt', payload.token, {
       httpOnly: true,
       sameSite: 'lax',
-      secure: process.env.NODE_ENV === 'production',
+      secure: this.envService.get('NODE_ENV') === 'production',
       path: '/',
       expires: new Date(Date.now() + 1000 * 60 * 60 * 24),
     });
@@ -67,7 +69,7 @@ export class AuthController {
     res.clearCookie('jwt', {
       httpOnly: true,
       sameSite: 'lax',
-      secure: process.env.NODE_ENV === 'production',
+      secure: this.envService.get('NODE_ENV') === 'production',
       path: '/',
     });
 

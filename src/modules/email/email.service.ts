@@ -2,11 +2,12 @@ import { Injectable } from '@nestjs/common';
 import * as nodemailer from 'nodemailer';
 import * as React from 'react';
 import { render } from '@react-email/components';
+import { EnvService } from 'src/env.service';
 
 @Injectable()
 export class EmailService {
   private transporter: nodemailer.Transporter;
-  constructor() {
+  constructor(private readonly envService: EnvService) {
     this.transporter = nodemailer.createTransport({
       service: 'gmail',
       auth: {
@@ -27,7 +28,7 @@ export class EmailService {
 
   async sendMail(template: string, to: string) {
     await this.transporter.sendMail({
-      from: process.env.MAIL_APP_USER,
+      from: this.envService.get('MAIL_APP_USER'),
       subject: 'Email verification',
       to,
       html: template,

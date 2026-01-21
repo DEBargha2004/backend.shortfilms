@@ -9,6 +9,7 @@ import {
 @Injectable()
 export class MimeTypeService {
   isValidMimeType(mimetype: string, entitytype: EntityType) {
+    //@ts-ignore
     return MIMETYPE_RULES[entitytype].includes(mimetype as AllowedMimeType);
   }
 

@@ -9,13 +9,34 @@ import { MimeTypeService } from './mimetype.service';
 import { EntityType } from './mimetypes';
 import { S3_CLIENT } from './s3.provider';
 import { ErrorMessage } from 'src/libs/error';
+import { catchError, firstValueFrom } from 'rxjs';
+import { HttpService } from '@nestjs/axios';
+import * as crypto from 'crypto';
+
+export type VideoEntity = 'shortfilm' | 'trailer';
 
 @Injectable()
 export class StorageService {
   constructor(
     private readonly mimetypeService: MimeTypeService,
     @Inject(S3_CLIENT) private readonly s3: S3Client,
+    private readonly httpService: HttpService,
   ) {}
+
+  async checkBunnyVideo(videoId: string, entitytype: VideoEntity) {
+    try {
+      const res = await firstValueFrom(
+        this.httpService.head(
+          `https://video.bunnycdn.com/play/${process.env.BUNNY_LIBRARY_ID}/${videoId}`,
+        ),
+      );
+
+      if (res.status === 200) return true;
+      return false;
+    } catch (error) {
+      return false;
+    }
+  }
 
   async getPresignedUrl(
     path: string,
@@ -46,6 +67,40 @@ export class StorageService {
     });
 
     return { url, path: path };
+  }
+
+  async getBunnyUploadInfo() {
+    const res = await firstValueFrom(
+      this.httpService.post(
+        `https://video.bunnycdn.com/library/${process.env.BUNNY_LIBRARY_ID}/videos`,
+        {
+          title: crypto.randomUUID(),
+          collectionId: process.env.BUNNY_SHORTFILM_COLLECTION_ID,
+        },
+        {
+          headers: {
+            AccessKey: process.env.BUNNY_API_KEY,
+          },
+        },
+      ),
+    );
+    const videoId = res.data.guid;
+    // console.log(videoId, 'video id');
+
+    const expires = Math.floor(Date.now() / 1000) + 3000;
+    const sig = crypto
+      .createHash('sha256')
+      .update(
+        `${process.env.BUNNY_LIBRARY_ID}${process.env.BUNNY_API_KEY}${expires}${videoId}`,
+      )
+      .digest('hex');
+
+    return {
+      signature: sig,
+      videoId,
+      libraryId: process.env.BUNNY_LIBRARY_ID,
+      expires,
+    };
   }
 
   async getSignedUrl(path: string) {

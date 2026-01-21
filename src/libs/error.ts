@@ -5,7 +5,8 @@ type ErrorCode =
   | 'INVALID_CREDENTIALS'
   | 'INVALID_TOKEN'
   | 'INVALID_MIMETYPE'
-  | 'UNKNOWN_ERROR';
+  | 'UNKNOWN_ERROR'
+  | 'DUPLICATE_PLAYLIST';
 
 export class ErrorMessage {
   constructor(
