@@ -29,19 +29,19 @@ services:
       ME_CONFIG_BASICAUTH_USERNAME: ${ME_CONFIG_BASICAUTH_USERNAME}
       ME_CONFIG_BASICAUTH_PASSWORD: ${ME_CONFIG_BASICAUTH_PASSWORD}
 
-  backend:
-    build:
-      context: .
-      dockerfile: Dockerfile
-    depends_on:
-      mongo:
-        condition: service_healthy
-    ports:
-      - '127.0.0.1:${BACKEND_PORT}:4000'
-    env_file:
-      - .env
-    environment:
-      DB_URL: mongodb://${MONGO_ROOT_USERNAME}:${MONGO_ROOT_PASSWORD}@mongo:27017/shortfilms?authSource=admin
+  # backend:
+  #   build:
+  #     context: .
+  #     dockerfile: Dockerfile
+  #   depends_on:
+  #     mongo:
+  #       condition: service_healthy
+  #   ports:
+  #     - '127.0.0.1:${BACKEND_PORT}:4000'
+  #   env_file:
+  #     - .env
+  #   environment:
+  #     DB_URL: mongodb://${MONGO_ROOT_USERNAME}:${MONGO_ROOT_PASSWORD}@mongo:27017/shortfilms?authSource=admin
 
 volumes:
   shortfilms-db:

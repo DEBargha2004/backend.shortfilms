@@ -1,16 +1,17 @@
 # Stage 1: Build
-FROM node:20-alpine AS builder
+FROM node:20-slim AS builder
 
-# Enable pnpm
-RUN corepack enable pnpm
+# Install necessary build tools and enable pnpm
+RUN apt-get update && apt-get install -y python3 make g++ && \
+    corepack enable pnpm
 
 WORKDIR /app
 
 # Copy configuration files
 COPY package.json pnpm-lock.yaml ./
 
-# Install all dependencies (including devDependencies for build)
-RUN pnpm install
+# Install all dependencies
+RUN pnpm install --frozen-lockfile
 
 # Copy source code
 COPY . .
@@ -18,10 +19,13 @@ COPY . .
 # Build the application
 RUN pnpm build
 
-# Stage 2: Runner
-FROM node:20-alpine AS runner
+# Prune dev dependencies to save space and avoid second install in runner
+RUN pnpm prune --prod
 
-# Enable pnpm
+# Stage 2: Runner
+FROM node:20-slim AS runner
+
+# Enable pnpm for any runtime needs (optional but good practice)
 RUN corepack enable pnpm
 
 WORKDIR /app
@@ -29,16 +33,12 @@ WORKDIR /app
 # Set environment
 ENV NODE_ENV=production
 
-# Copy configuration files
-COPY package.json pnpm-lock.yaml ./
-
-# Install ONLY production dependencies
-RUN pnpm install --prod
-
-# Copy built assets from builder
+# Copy configuration and pruned node_modules + dist from builder
+COPY --from=builder /app/package.json ./
+COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/dist ./dist
 
-# Use a non-root user for security
+# Use a non-root user
 USER node
 
 # Expose the application port
