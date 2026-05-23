@@ -1,5 +1,6 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { HydratedDocument, Types } from 'mongoose';
+import { TRole } from '../authorization/authorization.constants';
 
 @Schema({ timestamps: true })
 export class User {
@@ -12,8 +13,14 @@ export class User {
   @Prop({ type: String })
   image: string;
 
-  @Prop({ type: Boolean, default: false })
-  isVerified: boolean;
+  @Prop({ type: Date, default: null })
+  verifiedAt?: Date | null;
+
+  @Prop({ type: Date, default: null })
+  deletedAt?: Date | null;
+
+  @Prop({ type: String })
+  role: TRole;
 }
 
 export const UserSchema = SchemaFactory.createForClass(User);

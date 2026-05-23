@@ -13,14 +13,15 @@ import { AccountVerificationDto } from './dto/account-verification';
 import { PasswordResetDto, PasswordResetTokenDto } from './dto/password-reset';
 import type { Response } from 'express';
 import { StorageService } from '../storage/storage.service';
-import { EnvService } from 'src/env.service';
+import { ConfigService } from '@nestjs/config';
+import { TConfig } from 'src/libs/env';
 
 @Controller('auth')
 export class AuthController {
   constructor(
     private readonly authService: AuthService,
     private readonly storageService: StorageService,
-    private readonly envService: EnvService,
+    private readonly configService: ConfigService<TConfig>,
   ) {}
 
   @Post('signin')
@@ -31,12 +32,12 @@ export class AuthController {
   ) {
     const payload = await this.authService.signin(body);
 
-    res.cookie('jwt', payload.token, {
+    res.cookie('user', payload.token, {
       httpOnly: true,
       sameSite: 'lax',
-      secure: this.envService.get('NODE_ENV') === 'production',
+      secure: this.configService.get('NODE_ENV') === 'production',
       path: '/',
-      expires: new Date(Date.now() + 1000 * 60 * 60 * 24),
+      maxAge: 1000 * 60 * 60 * 24,
     });
 
     return {
@@ -56,7 +57,7 @@ export class AuthController {
   @HttpCode(HttpStatus.CREATED)
   async signup(@Body() body: CreateUserDto) {
     const payload = await this.authService.createUser(body);
-    this.authService.sendVerificationEmail(payload);
+    await this.authService.sendVerificationEmail(payload);
 
     return {
       message: 'User created successfully',
@@ -65,11 +66,11 @@ export class AuthController {
 
   @Post('signout')
   @HttpCode(HttpStatus.OK)
-  async signout(@Res({ passthrough: true }) res: Response) {
-    res.clearCookie('jwt', {
+  signout(@Res({ passthrough: true }) res: Response) {
+    res.clearCookie('user', {
       httpOnly: true,
       sameSite: 'lax',
-      secure: this.envService.get('NODE_ENV') === 'production',
+      secure: this.configService.get('NODE_ENV') === 'production',
       path: '/',
     });
 

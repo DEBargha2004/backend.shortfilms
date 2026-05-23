@@ -4,6 +4,7 @@ import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { getFields } from 'src/libs/query';
 import { StorageService } from '../storage/storage.service';
+import { TRole } from '../authorization/authorization.constants';
 
 @Injectable()
 export class UserService {
@@ -29,13 +30,18 @@ export class UserService {
   }
 
   async getUserByEmail(email: string) {
-    const user = await this.userModel.findOne({ email });
-    return user?.toObject();
+    const user = await this.userModel.findOne({ email }).lean();
+    return user;
   }
 
   async getUserById(id: string) {
     const user = await this.userModel.findById(id);
     return user?.toObject();
+  }
+
+  async getUsersByRole(role: TRole) {
+    const user = await this.userModel.find({ role }).lean();
+    return user;
   }
 
   async searchUsers(query: string) {
@@ -66,7 +72,9 @@ export class UserService {
   }
 
   async setUserVerification(userId: string, status: boolean) {
-    const user = await this.updateUser(userId, { isVerified: status });
+    const user = await this.updateUser(userId, {
+      verifiedAt: status ? new Date() : null,
+    });
     return user;
   }
 }

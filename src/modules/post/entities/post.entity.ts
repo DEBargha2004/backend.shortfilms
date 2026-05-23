@@ -56,6 +56,12 @@ export class Post {
 
   @Prop({ type: [PressSchema] })
   press: Press[];
+
+  @Prop({ type: Date, default: null })
+  deletedAt: Date | null;
+
+  @Prop({ type: Date, default: null })
+  verifiedAt: Date | null;
 }
 
 export const PostsSchema = SchemaFactory.createForClass(Post);

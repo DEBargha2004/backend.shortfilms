@@ -16,8 +16,9 @@ export class PasswordResetService {
 
   async createResetPasswordToken(userId: string) {
     const token = this.otpService.generateOtp(6);
+
     const resetPassword = await this.resetPasswordModel.create({
-      userId,
+      user: userId,
       token,
     });
 
@@ -44,7 +45,7 @@ export class PasswordResetService {
   }
 
   async getTokenOwner(token: string) {
-    let tokenObj = await this.resetPasswordModel
+    const tokenObj = await this.resetPasswordModel
       .findOne({ token })
       .populate<{ user: Doc<User> }>('user')
       .exec();

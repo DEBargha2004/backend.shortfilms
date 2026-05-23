@@ -3,19 +3,20 @@ import {
   Controller,
   Delete,
   Get,
+  HttpCode,
+  HttpStatus,
   Param,
   Post,
   Put,
-  UseGuards,
 } from '@nestjs/common';
-import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { CreateGenreDto } from './dto/create-genre.dto';
+import { CreateTechniqueDto } from './dto/create-technique.dto';
 import { CreatePostDto } from './dto/create-post';
 import { ApiBody } from '@nestjs/swagger';
 import { User } from 'src/common/decorators/user';
-import { JwtPayload } from 'src/types/jwt-payload';
+import { TJwtToken } from 'src/types/jwt-payload';
 import { PostService } from './post.service';
-import { UpdatePostGuard } from './guards/update-post';
-import { CreatePostCategoriesDto } from './dto/categories';
+import { Auth } from '../auth/auth.guard';
 
 @Controller('post')
 export class PostController {
@@ -26,25 +27,38 @@ export class PostController {
     return await this.postService.getFeed();
   }
 
-  @UseGuards(JwtAuthGuard, UpdatePostGuard)
   @Get('creator/:id')
   async getPostOfCreator(@Param('id') id: string) {
     return await this.postService.getPostofCreator(id);
   }
 
-  @UseGuards(JwtAuthGuard)
+  @Auth()
   @Post('create')
   @ApiBody({ type: CreatePostDto })
-  async createPost(@Body() postDto: CreatePostDto, @User() user: JwtPayload) {
-    const res = await this.postService.createPost(user.userId, postDto);
+  async createPost(@Body() postDto: CreatePostDto, @User() user: TJwtToken) {
+    await this.postService.createPost(user.sub, postDto);
     return { message: 'Post Created Successfully' };
   }
 
-  @UseGuards(JwtAuthGuard)
+  @Auth()
   @Get('all')
-  async getAllPosts(@User() user: JwtPayload) {
-    const res = await this.postService.getAllPostsOfUser(user.userId);
+  async getAllPosts(@User() user: TJwtToken) {
+    const res = await this.postService.getAllPostsOfUser(user.sub);
     return res;
+  }
+
+  @Auth('post.read')
+  @Get('admin/all')
+  async getAllPostsAdmin() {
+    const res = await this.postService.getAllPostsAdmin();
+    return res;
+  }
+
+  @Auth('post.verify')
+  @Put(':id/verify')
+  async verifyPost(@Param('id') id: string, @Body('status') status: boolean) {
+    await this.postService.setVerification(id, status);
+    return { message: 'Verification status updated successfully' };
   }
 
   @Get(':id')
@@ -53,35 +67,133 @@ export class PostController {
     return post;
   }
 
-  @UseGuards(JwtAuthGuard, UpdatePostGuard)
+  @Auth()
   @Put(':id/edit')
   async updatePost(@Param('id') id: string, @Body() postData: CreatePostDto) {
-    const res = await this.postService.updatePost(id, postData);
+    await this.postService.updatePost(id, postData);
     return { message: 'Post Updated successfully' };
   }
 
+  @Auth()
   @Delete(':id')
-  async deletePost(@Param('id') id: string) {}
-
-  @Get('categories/genre')
-  async getGenres() {
-    return await this.postService.getGenres();
+  async deletePost(@Param('id') id: string, @User() user: TJwtToken) {
+    await this.postService.deletePost(id, user.sub);
+    return { message: 'Post deleted successfully' };
   }
 
-  @Post('categories/genre')
-  async createGenres(@Body() genres: CreatePostCategoriesDto) {
-    await this.postService.createGenres(genres.data);
-    return { message: 'Genres created successfully' };
+  // Genre Single CRUD endpoints
+  @Auth('genre.create')
+  @Post('genre')
+  @HttpCode(HttpStatus.CREATED)
+  async createGenreSingle(@Body() createGenreDto: CreateGenreDto) {
+    const res = await this.postService.createGenre(createGenreDto);
+    return {
+      message: 'Genre created successfully',
+      data: { id: res._id, name: res.name },
+    };
   }
 
-  @Get('categories/technique')
-  async getTechnique() {
-    return await this.postService.getTechniques();
+  @Auth('genre.read')
+  @Get('genre/all')
+  @HttpCode(HttpStatus.OK)
+  async findAllGenres() {
+    const res = await this.postService.findAllGenres();
+    return {
+      data: res.map((c: any) => ({
+        id: c._id,
+        name: c.name,
+        createdAt: c.createdAt,
+      })),
+    };
   }
 
-  @Post('categories/technique')
-  async createTechnique(@Body() genres: CreatePostCategoriesDto) {
-    await this.postService.createTechniques(genres.data);
-    return { message: 'Techniques created successfully' };
+  @Auth('genre.read')
+  @Get('genre/:id')
+  @HttpCode(HttpStatus.OK)
+  async findOneGenre(@Param('id') id: string) {
+    const res = await this.postService.findOneGenre(id);
+    return {
+      data: { id: res._id, name: res.name, createdAt: res.createdAt },
+    };
+  }
+
+  @Auth('genre.update')
+  @Put('genre/:id')
+  @HttpCode(HttpStatus.OK)
+  async updateGenre(
+    @Param('id') id: string,
+    @Body() updateGenreDto: CreateGenreDto,
+  ) {
+    const res = await this.postService.updateGenre(id, updateGenreDto);
+    return {
+      message: 'Genre updated successfully',
+      data: { id: res._id, name: res.name },
+    };
+  }
+
+  @Auth('genre.delete')
+  @Delete('genre/:id')
+  @HttpCode(HttpStatus.OK)
+  async removeGenre(@Param('id') id: string) {
+    await this.postService.removeGenre(id);
+    return { message: 'Genre deleted successfully' };
+  }
+
+  // Technique Single CRUD endpoints
+  @Auth('technique.create')
+  @Post('technique')
+  @HttpCode(HttpStatus.CREATED)
+  async createTechniqueSingle(@Body() createTechDto: CreateTechniqueDto) {
+    const res = await this.postService.createTechniqueSingle(createTechDto);
+    return {
+      message: 'Technique created successfully',
+      data: { id: res._id, name: res.name },
+    };
+  }
+
+  @Auth('technique.read')
+  @Get('technique/all')
+  @HttpCode(HttpStatus.OK)
+  async findAllTechniques() {
+    const res = await this.postService.findAllTechniques();
+    return {
+      data: res.map((c: any) => ({
+        id: c._id,
+        name: c.name,
+        createdAt: c.createdAt,
+      })),
+    };
+  }
+
+  @Auth('technique.read')
+  @Get('technique/:id')
+  @HttpCode(HttpStatus.OK)
+  async findOneTechnique(@Param('id') id: string) {
+    const res = await this.postService.findOneTechnique(id);
+    return {
+      data: { id: res._id, name: res.name, createdAt: res.createdAt },
+    };
+  }
+
+  @Auth('technique.update')
+  @Put('technique/:id')
+  @HttpCode(HttpStatus.OK)
+  async updateTechnique(
+    @Param('id') id: string,
+    @Body() updateTechDto: CreateTechniqueDto,
+  ) {
+    const res = await this.postService.updateTechnique(id, updateTechDto);
+    return {
+      message: 'Technique updated successfully',
+      data: { id: res._id, name: res.name },
+    };
+  }
+
+  @Auth('technique.delete')
+  @Delete('technique/:id')
+  @HttpCode(HttpStatus.OK)
+  async removeTechnique(@Param('id') id: string) {
+    await this.postService.removeTechnique(id);
+    return { message: 'Technique deleted successfully' };
   }
 }

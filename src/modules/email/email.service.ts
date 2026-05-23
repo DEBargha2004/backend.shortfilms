@@ -2,12 +2,13 @@ import { Injectable } from '@nestjs/common';
 import * as nodemailer from 'nodemailer';
 import * as React from 'react';
 import { render } from '@react-email/components';
-import { EnvService } from 'src/env.service';
+import { ConfigService } from '@nestjs/config';
+import { TConfig } from 'src/libs/env';
 
 @Injectable()
 export class EmailService {
   private transporter: nodemailer.Transporter;
-  constructor(private readonly envService: EnvService) {
+  constructor(private readonly configService: ConfigService<TConfig>) {
     this.transporter = nodemailer.createTransport({
       service: 'gmail',
       auth: {
@@ -28,7 +29,7 @@ export class EmailService {
 
   async sendMail(template: string, to: string) {
     await this.transporter.sendMail({
-      from: this.envService.get('MAIL_APP_USER'),
+      from: this.configService.get('MAIL_APP_USER', { infer: true }),
       subject: 'Email verification',
       to,
       html: template,

@@ -3,24 +3,18 @@ import { ApiModule } from './modules/api.module';
 import { AppController } from './app.controller';
 import { MongooseModule } from '@nestjs/mongoose';
 import { ConfigModule } from '@nestjs/config';
-import { envSchema } from './libs/env';
-import { EnvService } from './env.service';
+import config from './libs/env';
 
 @Module({
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
-      validate(config) {
-        const parsed = envSchema.safeParse(config);
-        if (parsed.success) return parsed.data;
-
-        throw new Error(`Config Validation error: ${parsed.error}`);
-      },
+      load: [config],
     }),
     ApiModule,
-    MongooseModule.forRoot(process.env.DB_URL),
+    MongooseModule.forRoot(config().DB_URL),
   ],
-  providers: [EnvService],
+  providers: [],
   controllers: [AppController],
 })
 export class AppModule {}

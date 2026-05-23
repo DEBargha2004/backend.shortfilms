@@ -1,7 +1,6 @@
-import { Controller, Get, Query, UseGuards } from '@nestjs/common';
+import { Controller, Get, Query } from '@nestjs/common';
 import { StorageService } from './storage.service';
-import { MicroserviceGuard } from 'src/common/guards/microservice';
-import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { Auth } from '../auth/auth.guard';
 
 @Controller('storage')
 export class StorageController {
@@ -19,7 +18,7 @@ export class StorageController {
     return url;
   }
 
-  @UseGuards(JwtAuthGuard)
+  @Auth()
   @Get('post/video/trailer')
   async getPreSignedUrlForPostVideoTrailer(
     @Query('mimetype') mimetype: string = 'video/mp4',
@@ -28,7 +27,7 @@ export class StorageController {
     return url;
   }
 
-  @UseGuards(JwtAuthGuard)
+  @Auth()
   @Get('post/video/shortfilm')
   async getPreSignedUrlForPostVideo(
     @Query('mimetype') mimetype: string = 'video/mp4',
@@ -37,7 +36,7 @@ export class StorageController {
     return url;
   }
 
-  @UseGuards(JwtAuthGuard)
+  @Auth()
   @Get('post/thumbnail')
   async getPresignedUrlForThumbnail(
     @Query('mimetype') mimetype: string = 'image/webp',
@@ -49,7 +48,7 @@ export class StorageController {
     );
   }
 
-  @UseGuards(JwtAuthGuard)
+  @Auth()
   @Get('post/gallery')
   async getPresignedUrlForPostGallery(
     @Query('mimetype') mimetype: string = 'image/webp',

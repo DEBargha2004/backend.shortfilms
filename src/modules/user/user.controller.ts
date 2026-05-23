@@ -5,15 +5,14 @@ import {
   HttpStatus,
   Param,
   Query,
-  Req,
-  UseGuards,
 } from '@nestjs/common';
 import { UserService } from './user.service';
 import { UserIdDto } from './dto/userid-dto';
-import { JwtAuthGuard } from '../auth/jwt-auth.guard';
-import { AuthenticatedRequest } from 'src/types/request';
 import { ErrorMessage } from 'src/libs/error';
 import { StorageService } from '../storage/storage.service';
+import { Auth } from '../auth/auth.guard';
+import { User } from 'src/common/decorators/user';
+import { TJwtToken } from 'src/types/jwt-payload';
 
 @Controller('user')
 export class UserController {
@@ -22,11 +21,11 @@ export class UserController {
     private readonly storageService: StorageService,
   ) {}
 
-  @UseGuards(JwtAuthGuard)
+  @Auth()
   @Get()
-  async getCurrentUser(@Req() req: AuthenticatedRequest) {
-    const res = await this.userService.getUserById(req.user.userId);
-
+  async getCurrentUser(@User() user: TJwtToken) {
+    const res = await this.userService.getUserById(user.sub);
+    console.log(res, user);
     if (!res)
       throw new HttpException(
         new ErrorMessage('USER_NOT_FOUND', 'User not found'),
@@ -38,6 +37,7 @@ export class UserController {
       avatar: await this.storageService.getSignedUrl(res.image),
       email: res.email,
       name: res.name,
+      role: res.role,
     };
   }
 

@@ -13,6 +13,10 @@ import { PasswordResetService } from 'src/modules/token/password-reset/password-
 import PasswordResetTemplate from 'src/modules/email/templates/password-reset';
 import { PasswordResetDto } from '../dto/password-reset';
 import { ErrorMessage } from 'src/libs/error';
+import {
+  ROLES,
+  TRole,
+} from 'src/modules/authorization/authorization.constants';
 
 @Injectable()
 export class AuthService {
@@ -32,7 +36,7 @@ export class AuthService {
 
     if (!userCredentials)
       throw new HttpException(
-        new ErrorMessage('USER_NOT_FOUND', 'User not found'),
+        new ErrorMessage('INVALID_CREDENTIALS', 'Invalid credentials'),
         HttpStatus.NOT_FOUND,
       );
 
@@ -47,24 +51,25 @@ export class AuthService {
       );
 
     const userProfile = await this.userService.getUserById(
-      userCredentials.userId.toString(),
+      userCredentials.user.toString(),
     );
-    if (!userProfile?.isVerified)
+
+    if (!userProfile?.verifiedAt)
       throw new HttpException(
-        new ErrorMessage('USER_NOT_VERIFIED', 'User not verified'),
+        new ErrorMessage('INVALID_CREDENTIALS', 'Account not verified'),
         HttpStatus.UNAUTHORIZED,
       );
 
     const token = this.tokenService.sign({
-      userId: userCredentials.userId.toString(),
-      role: 'user',
+      userId: userCredentials.user.toString(),
+      role: userProfile.role,
       email: userCredentials.email,
     });
 
     return { token, userProfile };
   }
 
-  async createUser(createUserDto: CreateUserDto) {
+  async createUser(createUserDto: CreateUserDto, role?: TRole) {
     const existingUser = await this.userService.getUserByEmail(
       createUserDto.email,
     );
@@ -80,11 +85,11 @@ export class AuthService {
       email: createUserDto.email,
       name: createUserDto.name,
       image: createUserDto.image,
-      isVerified: false,
+      role: role || ROLES.CREATOR,
     });
 
     await this.credentialsService.createCredentials({
-      userId: newUser._id,
+      user: newUser._id,
       email: createUserDto.email,
       password: encryptedPassword,
     });
@@ -164,5 +169,32 @@ export class AuthService {
     this.passwordResetService.deleteResetPasswordToken({
       email: tokenOwner.email,
     });
+  }
+
+  async registerUserWithoutVerification(user: CreateUserDto, role: TRole) {
+    const existingUser = await this.userService.getUserByEmail(user.email);
+    if (existingUser)
+      throw new HttpException(
+        new ErrorMessage('DUPLICATE_USER', 'User already exists'),
+        HttpStatus.BAD_REQUEST,
+      );
+
+    const encryptedPassword = await bcrypt.hash(user.password, 10);
+
+    const newUser = await this.userService.createUser({
+      email: user.email,
+      name: user.name,
+      image: user.image,
+      role: role || ROLES.CREATOR,
+      verifiedAt: new Date(),
+    });
+
+    await this.credentialsService.createCredentials({
+      user: newUser._id,
+      email: user.email,
+      password: encryptedPassword,
+    });
+
+    return newUser;
   }
 }

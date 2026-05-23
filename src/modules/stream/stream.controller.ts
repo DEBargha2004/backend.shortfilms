@@ -5,10 +5,8 @@ import {
   Param,
   Redirect,
   Res,
-  UseGuards,
 } from '@nestjs/common';
 import { StreamService } from './stream.service';
-import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { Response } from 'express';
 
 @Controller('stream')

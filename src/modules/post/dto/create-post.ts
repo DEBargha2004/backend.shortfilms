@@ -142,7 +142,7 @@ class Categories {
   })
   @IsArray()
   @ArrayNotEmpty()
-  @IsString({ each: true })
+  @IsMongoId({ each: true })
   genres: string[];
 
   @ApiProperty({
@@ -152,7 +152,7 @@ class Categories {
   })
   @IsArray()
   @ArrayNotEmpty()
-  @IsString({ each: true })
+  @IsMongoId({ each: true })
   techniques: string[];
 
   @ApiProperty({

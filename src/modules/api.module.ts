@@ -7,6 +7,8 @@ import { VideoProcessingModule } from './video-processing/processor.module';
 import { StreamModule } from './stream/stream.module';
 import { SiteMetadataModule } from './site-metadata/site-metadata.module';
 import { PostModule } from './post/post.module';
+import { AuthorizationModule } from './authorization/authorization.module';
+import { SeederService } from './seeder.service';
 
 @Module({
   imports: [
@@ -18,6 +20,8 @@ import { PostModule } from './post/post.module';
     StreamModule,
     SiteMetadataModule,
     PostModule,
+    AuthorizationModule,
   ],
+  providers: [SeederService],
 })
 export class ApiModule {}
