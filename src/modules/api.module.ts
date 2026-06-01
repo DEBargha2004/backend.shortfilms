@@ -7,6 +7,7 @@ import { VideoProcessingModule } from './video-processing/processor.module';
 import { StreamModule } from './stream/stream.module';
 import { SiteMetadataModule } from './site-metadata/site-metadata.module';
 import { PostModule } from './post/post.module';
+import { CommentModule } from './comment/comment.module';
 import { AuthorizationModule } from './authorization/authorization.module';
 import { SeederService } from './seeder.service';
 
@@ -20,6 +21,7 @@ import { SeederService } from './seeder.service';
     StreamModule,
     SiteMetadataModule,
     PostModule,
+    CommentModule,
     AuthorizationModule,
   ],
   providers: [SeederService],

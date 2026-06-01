@@ -1,6 +1,6 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { HydratedDocument, Types } from 'mongoose';
-import { TRole } from '../authorization/authorization.constants';
+import type { TRole } from '../authorization/authorization.constants';
 
 @Schema({ timestamps: true })
 export class User {

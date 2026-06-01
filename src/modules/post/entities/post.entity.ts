@@ -62,6 +62,15 @@ export class Post {
 
   @Prop({ type: Date, default: null })
   verifiedAt: Date | null;
+
+  @Prop({ type: Number, default: 0 })
+  likesCount: number;
+
+  @Prop({ type: Number, default: 0 })
+  dislikesCount: number;
+
+  @Prop({ type: Number, default: 0 })
+  commentsCount: number;
 }
 
 export const PostsSchema = SchemaFactory.createForClass(Post);

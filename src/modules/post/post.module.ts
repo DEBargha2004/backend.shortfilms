@@ -6,10 +6,14 @@ import { Post, PostsSchema } from './entities/post.entity';
 import { StorageModule } from '../storage/storage.module';
 import { Genres, GenreSchema } from './entities/genre.entity';
 import { Techniques, TechniqueSchema } from './entities/technique.entity';
+import { Reaction, ReactionSchema } from './entities/reaction.entity';
 
 @Module({
   imports: [
-    MongooseModule.forFeature([{ name: Post.name, schema: PostsSchema }]),
+    MongooseModule.forFeature([
+      { name: Post.name, schema: PostsSchema },
+      { name: Reaction.name, schema: ReactionSchema },
+    ]),
     MongooseModule.forFeature([{ name: Genres.name, schema: GenreSchema }]),
     MongooseModule.forFeature([
       { name: Techniques.name, schema: TechniqueSchema },

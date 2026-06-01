@@ -13,11 +13,13 @@ import { StorageService } from '../storage/storage.service';
 import { Doc } from 'src/types/doc';
 import { Genres } from './entities/genre.entity';
 import { Techniques } from './entities/technique.entity';
+import { Reaction } from './entities/reaction.entity';
 
 @Injectable()
 export class PostService {
   constructor(
     @InjectModel(Post.name) private readonly postsModel: Model<Post>,
+    @InjectModel(Reaction.name) private readonly reactionModel: Model<Reaction>,
     @InjectModel(Genres.name) private readonly genreModel: Model<Genres>,
     @InjectModel(Techniques.name)
     private readonly techniqueModel: Model<Techniques>,
@@ -135,15 +137,137 @@ export class PostService {
     return post;
   }
 
-  async getPost(postId: string) {
+  async getPost(postId: string, userId?: string | null) {
     const post = await this.postsModel
       .findOne({ _id: postId, deletedAt: null })
       .populate<{ user: Doc<User> }>('user')
       .populate('categories.genres')
       .populate('categories.techniques')
-      // .select(getFields<Doc<Post>>(['_id']))
       .lean();
-    return post;
+
+    if (!post) return null;
+
+    let userReaction: 'like' | 'dislike' | null = null;
+    if (userId) {
+      const reaction = await this.reactionModel
+        .findOne({ post: postId, user: userId })
+        .lean();
+      if (reaction) {
+        userReaction = reaction.type;
+      }
+    }
+
+    return {
+      ...post,
+      userReaction,
+    };
+  }
+
+  async reactToPost(
+    postId: string,
+    userId: string,
+    type: 'like' | 'dislike' | null,
+  ) {
+    const post = await this.postsModel.findOne({
+      _id: postId,
+      deletedAt: null,
+    });
+    if (!post) throw new NotFoundException('Post not found');
+
+    const existingReaction = await this.reactionModel.findOne({
+      post: postId,
+      user: userId,
+    });
+
+    let finalReaction: 'like' | 'dislike' | null = null;
+
+    if (type === 'like') {
+      if (existingReaction) {
+        if (existingReaction.type === 'like') {
+          // Toggle off like
+          await this.reactionModel.deleteOne({ _id: existingReaction._id });
+          await this.postsModel.findByIdAndUpdate(postId, {
+            $inc: { likesCount: -1 },
+          });
+          finalReaction = null;
+        } else {
+          // Switch from dislike to like
+          existingReaction.type = 'like';
+          await existingReaction.save();
+          await this.postsModel.findByIdAndUpdate(postId, {
+            $inc: { likesCount: 1, dislikesCount: -1 },
+          });
+          finalReaction = 'like';
+        }
+      } else {
+        // New like reaction
+        await this.reactionModel.create({
+          post: postId,
+          user: userId,
+          type: 'like',
+        });
+        await this.postsModel.findByIdAndUpdate(postId, {
+          $inc: { likesCount: 1 },
+        });
+        finalReaction = 'like';
+      }
+    } else if (type === 'dislike') {
+      if (existingReaction) {
+        if (existingReaction.type === 'dislike') {
+          // Toggle off dislike
+          await this.reactionModel.deleteOne({ _id: existingReaction._id });
+          await this.postsModel.findByIdAndUpdate(postId, {
+            $inc: { dislikesCount: -1 },
+          });
+          finalReaction = null;
+        } else {
+          // Switch from like to dislike
+          existingReaction.type = 'dislike';
+          await existingReaction.save();
+          await this.postsModel.findByIdAndUpdate(postId, {
+            $inc: { likesCount: -1, dislikesCount: 1 },
+          });
+          finalReaction = 'dislike';
+        }
+      } else {
+        // New dislike reaction
+        await this.reactionModel.create({
+          post: postId,
+          user: userId,
+          type: 'dislike',
+        });
+        await this.postsModel.findByIdAndUpdate(postId, {
+          $inc: { dislikesCount: 1 },
+        });
+        finalReaction = 'dislike';
+      }
+    } else {
+      // type is null or 'none' -> Explicit unlike/undislike
+      if (existingReaction) {
+        await this.reactionModel.deleteOne({ _id: existingReaction._id });
+        if (existingReaction.type === 'like') {
+          await this.postsModel.findByIdAndUpdate(postId, {
+            $inc: { likesCount: -1 },
+          });
+        } else {
+          await this.postsModel.findByIdAndUpdate(postId, {
+            $inc: { dislikesCount: -1 },
+          });
+        }
+      }
+      finalReaction = null;
+    }
+
+    // Return updated counts and reaction
+    const updatedPost = await this.postsModel
+      .findById(postId)
+      .select('likesCount dislikesCount')
+      .lean();
+    return {
+      likesCount: updatedPost?.likesCount ?? 0,
+      dislikesCount: updatedPost?.dislikesCount ?? 0,
+      userReaction: finalReaction,
+    };
   }
 
   async getFeed() {

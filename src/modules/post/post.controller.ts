@@ -8,7 +8,10 @@ import {
   Param,
   Post,
   Put,
+  Req,
 } from '@nestjs/common';
+import { Request } from 'express';
+import { JwtTokenService } from '../token/jwt/token.service';
 import { CreateGenreDto } from './dto/create-genre.dto';
 import { CreateTechniqueDto } from './dto/create-technique.dto';
 import { CreatePostDto } from './dto/create-post';
@@ -62,9 +65,22 @@ export class PostController {
   }
 
   @Get(':id')
-  async getPost(@Param('id') id: string) {
-    const post = await this.postService.getPost(id);
+  async getPost(@Param('id') id: string, @Req() req: Request) {
+    const authCookie = req.cookies?.['user'] ?? '';
+    const isJwtValid = authCookie ? JwtTokenService.verify(authCookie) : null;
+    const userId = isJwtValid ? isJwtValid.sub : null;
+    const post = await this.postService.getPost(id, userId);
     return post;
+  }
+
+  @Auth()
+  @Post(':id/react')
+  async reactToPost(
+    @Param('id') id: string,
+    @Body('type') type: 'like' | 'dislike' | null,
+    @User() user: TJwtToken,
+  ) {
+    return await this.postService.reactToPost(id, user.sub, type);
   }
 
   @Auth()
