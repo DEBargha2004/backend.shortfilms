@@ -2,6 +2,7 @@ import {
   Injectable,
   NotFoundException,
   UnauthorizedException,
+  ForbiddenException,
 } from '@nestjs/common';
 import { CreatePostDto } from './dto/create-post';
 import { InjectModel } from '@nestjs/mongoose';
@@ -68,8 +69,7 @@ export class PostService {
   }
 
   async deletePost(postId: string, userId: string) {
-    const post = await this.getPost(postId);
-    if (!post) throw new NotFoundException('Post not found');
+    const post = await this.getPost(postId, userId, null, false);
 
     if (post.user.role !== 'admin' && post.user._id.toString() !== userId)
       throw new UnauthorizedException('Unauthorized');
@@ -137,7 +137,12 @@ export class PostService {
     return post;
   }
 
-  async getPost(postId: string, userId?: string | null) {
+  async getPost(
+    postId: string,
+    userId?: string | null,
+    userRole?: string | null,
+    enforcePublicationCheck = true,
+  ) {
     const post = await this.postsModel
       .findOne({ _id: postId, deletedAt: null })
       .populate<{ user: Doc<User> }>('user')
@@ -145,7 +150,35 @@ export class PostService {
       .populate('categories.techniques')
       .lean();
 
-    if (!post) return null;
+    if (!post) {
+      throw new NotFoundException('Post not found');
+    }
+
+    if (enforcePublicationCheck) {
+      const isVerified = post.verifiedAt !== null;
+      const isPrivate = post.publishingOption?.publishType === 'private';
+
+      let isScheduledInFuture = false;
+      if (
+        post.schedulingOption?.isScheduled &&
+        post.schedulingOption.publishDate
+      ) {
+        isScheduledInFuture =
+          new Date(post.schedulingOption.publishDate) > new Date();
+      }
+
+      const isPublished = isVerified && !isPrivate && !isScheduledInFuture;
+
+      if (!isPublished) {
+        const isCreator =
+          userId && post.user && post.user._id.toString() === userId.toString();
+        const isAdmin = userRole === 'admin';
+
+        if (!isCreator && !isAdmin) {
+          throw new NotFoundException('Post not found');
+        }
+      }
+    }
 
     let userReaction: 'like' | 'dislike' | null = null;
     if (userId) {
@@ -173,6 +206,10 @@ export class PostService {
       deletedAt: null,
     });
     if (!post) throw new NotFoundException('Post not found');
+
+    if (post.verifiedAt === null) {
+      throw new ForbiddenException('Cannot react to an unverified post');
+    }
 
     const existingReaction = await this.reactionModel.findOne({
       post: postId,

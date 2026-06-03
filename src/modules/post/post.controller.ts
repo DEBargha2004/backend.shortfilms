@@ -67,9 +67,15 @@ export class PostController {
   @Get(':id')
   async getPost(@Param('id') id: string, @Req() req: Request) {
     const authCookie = req.cookies?.['user'] ?? '';
-    const isJwtValid = authCookie ? JwtTokenService.verify(authCookie) : null;
+    let isJwtValid: TJwtToken | null = null;
+    try {
+      isJwtValid = authCookie ? JwtTokenService.verify(authCookie) : null;
+    } catch {
+      // Ignore token verification errors
+    }
     const userId = isJwtValid ? isJwtValid.sub : null;
-    const post = await this.postService.getPost(id, userId);
+    const userRole = isJwtValid ? isJwtValid.role : null;
+    const post = await this.postService.getPost(id, userId, userRole);
     return post;
   }
 

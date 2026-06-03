@@ -26,6 +26,10 @@ export class CommentService {
       throw new NotFoundException('Post not found');
     }
 
+    if (post.verifiedAt === null) {
+      throw new ForbiddenException('Cannot comment on an unverified post');
+    }
+
     const createdComment = await this.commentModel.create({
       user: userId,
       post: dto.postId,
