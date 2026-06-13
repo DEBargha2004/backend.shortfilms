@@ -11,7 +11,7 @@ import {
 import { PlaylistCreateDto } from './dto/create-playlist';
 import { PlaylistService } from './playlist.service';
 import { User } from 'src/common/decorators/user';
-import { JwtPayload, TJwtToken } from 'src/types/jwt-payload';
+import { TJwtToken } from 'src/types/jwt-payload';
 import { UpdatePlaylistAuthorizedGuard } from './guards/update-playlist';
 import { Auth, AuthGuard } from '../auth/auth.guard';
 

@@ -1,4 +1,4 @@
-import { Inject, Injectable } from '@nestjs/common';
+import { ConflictException, Inject, Injectable } from '@nestjs/common';
 import { PlaylistCreateDto } from './dto/create-playlist';
 import { UserService } from '../user/user.service';
 import { InjectModel } from '@nestjs/mongoose';
@@ -6,7 +6,6 @@ import { Playlist } from './entities/playlist.entity';
 import { Model } from 'mongoose';
 import { User } from '../user/user.entity';
 import { Doc } from 'src/types/doc';
-import { ErrorMessage } from 'src/libs/error';
 
 @Injectable()
 export class PlaylistService {
@@ -20,12 +19,12 @@ export class PlaylistService {
     const ifSameName = playlistsOfUser.find((p) => p.name === payload.name);
 
     if (ifSameName)
-      throw new ErrorMessage('DUPLICATE_PLAYLIST', 'Playlist already exists');
+      throw new ConflictException('Playlist with same name already exists');
 
     const res = await this.playlistModel.create({
       name: payload.name,
+      description: payload.description,
       owner: ownerId,
-      posts: [],
     });
 
     return res.toObject();

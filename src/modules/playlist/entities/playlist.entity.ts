@@ -8,15 +8,15 @@ export class Playlist {
   @Prop({ type: String, required: true })
   name: string;
 
+  @Prop({ type: String, required: false })
+  description?: string | null;
+
   @Prop({
     type: mongoose.Schema.Types.ObjectId,
     ref: User.name,
     required: true,
   })
   owner: Types.ObjectId;
-
-  @Prop({ type: [mongoose.Schema.Types.ObjectId], ref: Post.name })
-  posts: Types.ObjectId[];
 }
 
 export const PlaylistSchema = SchemaFactory.createForClass(Playlist);
